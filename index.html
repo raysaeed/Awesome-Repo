@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Megacity Weather</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Megacity Weather</h1>
+      <p class="sub">Live conditions in the world's five most populated cities</p>
+    </div>
+    <div class="controls">
+      <div class="units" role="group" aria-label="Temperature unit">
+        <button type="button" data-unit="celsius" aria-pressed="true">°C</button>
+        <button type="button" data-unit="fahrenheit" aria-pressed="false">°F</button>
+      </div>
+      <button type="button" id="refresh" class="refresh">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="status" class="status" role="status">Loading weather…</p>
+    <section id="cities" class="grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="foot">
+    <p>
+      City ranking: UN <em>World Urbanization Prospects 2025</em> (urban agglomerations).
+      Weather data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>.
+    </p>
+    <p id="updated"></p>
+  </footer>
+
+  <template id="card-tpl">
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <span class="rank"></span>
+          <h2 class="city"></h2>
+          <p class="country"></p>
+        </div>
+        <div class="icon" aria-hidden="true"></div>
+      </div>
+      <div class="now">
+        <span class="temp"></span>
+        <div>
+          <p class="cond"></p>
+          <p class="feels"></p>
+        </div>
+      </div>
+      <dl class="stats">
+        <div><dt>High / Low</dt><dd class="hilo"></dd></div>
+        <div><dt>Humidity</dt><dd class="humidity"></dd></div>
+        <div><dt>Wind</dt><dd class="wind"></dd></div>
+        <div><dt>Precip.</dt><dd class="precip"></dd></div>
+        <div><dt>Sunrise</dt><dd class="sunrise"></dd></div>
+        <div><dt>Sunset</dt><dd class="sunset"></dd></div>
+      </dl>
+      <p class="meta"><span class="pop"></span> · Local time <span class="local"></span></p>
+      <ol class="forecast" aria-label="5-day forecast"></ol>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
