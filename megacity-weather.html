@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Megacity Weather</title>
+  <style>
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --text: #1b2230;
+  --muted: #5d6779;
+  --border: #e1e6ef;
+  --accent: #2f6fde;
+  --accent-text: #ffffff;
+  --chip: #eef2f9;
+  --error: #b42318;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141c;
+    --card: #18202c;
+    --text: #e8edf5;
+    --muted: #9aa5b8;
+    --border: #283244;
+    --accent: #5b92f0;
+    --accent-text: #0f141c;
+    --chip: #212b3a;
+    --error: #f97066;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.top, main, .foot {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 32px;
+  padding-bottom: 16px;
+}
+
+h1 { margin: 0; font-size: 1.75rem; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+
+.controls { display: flex; gap: 8px; }
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.units { display: inline-flex; }
+.units button { border-radius: 0; }
+.units button:first-child { border-radius: 8px 0 0 8px; }
+.units button:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+.units button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.status { color: var(--muted); min-height: 1.4em; }
+.status.error { color: var(--error); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.rank {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.city { margin: 2px 0 0; font-size: 1.35rem; }
+.country { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.icon { font-size: 2.6rem; line-height: 1; }
+
+.now { display: flex; align-items: center; gap: 14px; }
+.temp { font-size: 3rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cond { margin: 0; font-weight: 500; }
+.feels { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+.stats div { background: var(--chip); border-radius: 8px; padding: 8px 10px; }
+.stats dt { color: var(--muted); font-size: 0.75rem; }
+.stats dd { margin: 2px 0 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.meta { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+.forecast {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  text-align: center;
+  font-size: 0.85rem;
+}
+.forecast .d { color: var(--muted); }
+.forecast .i { font-size: 1.3rem; margin: 2px 0; }
+.forecast .t { font-variant-numeric: tabular-nums; }
+.forecast .lo { color: var(--muted); }
+
+.card.failed { justify-content: center; }
+.card.failed .msg { color: var(--error); }
+
+.foot { color: var(--muted); font-size: 0.85rem; padding-top: 24px; padding-bottom: 32px; }
+.foot a { color: var(--accent); }
+
+@media (max-width: 400px) {
+  .grid { grid-template-columns: 1fr; }
+  .temp { font-size: 2.5rem; }
+}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Megacity Weather</h1>
+      <p class="sub">Live conditions in the world's five most populated cities</p>
+    </div>
+    <div class="controls">
+      <div class="units" role="group" aria-label="Temperature unit">
+        <button type="button" data-unit="celsius" aria-pressed="true">°C</button>
+        <button type="button" data-unit="fahrenheit" aria-pressed="false">°F</button>
+      </div>
+      <button type="button" id="refresh" class="refresh">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="status" class="status" role="status">Loading weather…</p>
+    <section id="cities" class="grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="foot">
+    <p>
+      City ranking: UN <em>World Urbanization Prospects 2025</em> (urban agglomerations).
+      Weather data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>.
+    </p>
+    <p id="updated"></p>
+  </footer>
+
+  <template id="card-tpl">
+    <article class="card">
+      <div class="card-head">
+        <div>
+          <span class="rank"></span>
+          <h2 class="city"></h2>
+          <p class="country"></p>
+        </div>
+        <div class="icon" aria-hidden="true"></div>
+      </div>
+      <div class="now">
+        <span class="temp"></span>
+        <div>
+          <p class="cond"></p>
+          <p class="feels"></p>
+        </div>
+      </div>
+      <dl class="stats">
+        <div><dt>High / Low</dt><dd class="hilo"></dd></div>
+        <div><dt>Humidity</dt><dd class="humidity"></dd></div>
+        <div><dt>Wind</dt><dd class="wind"></dd></div>
+        <div><dt>Precip.</dt><dd class="precip"></dd></div>
+        <div><dt>Sunrise</dt><dd class="sunrise"></dd></div>
+        <div><dt>Sunset</dt><dd class="sunset"></dd></div>
+      </dl>
+      <p class="meta"><span class="pop"></span> · Local time <span class="local"></span></p>
+      <ol class="forecast" aria-label="5-day forecast"></ol>
+    </article>
+  </template>
+
+  <script>
+// Top 5 urban agglomerations by population, per UN World Urbanization Prospects 2025.
+const CITIES = [
+  { name: "Jakarta", country: "Indonesia", population: 41.9, lat: -6.2088, lon: 106.8456 },
+  { name: "Dhaka", country: "Bangladesh", population: 36.6, lat: 23.8103, lon: 90.4125 },
+  { name: "Tokyo", country: "Japan", population: 33.4, lat: 35.6762, lon: 139.6503 },
+  { name: "New Delhi", country: "India", population: 30.2, lat: 28.6139, lon: 77.209 },
+  { name: "Shanghai", country: "China", population: 29.6, lat: 31.2304, lon: 121.4737 },
+];
+
+// WMO weather interpretation codes -> [description, day icon, night icon]
+const WEATHER_CODES = {
+  0: ["Clear sky", "☀️", "🌙"],
+  1: ["Mainly clear", "🌤️", "🌙"],
+  2: ["Partly cloudy", "⛅", "☁️"],
+  3: ["Overcast", "☁️", "☁️"],
+  45: ["Fog", "🌫️", "🌫️"],
+  48: ["Rime fog", "🌫️", "🌫️"],
+  51: ["Light drizzle", "🌦️", "🌧️"],
+  53: ["Drizzle", "🌦️", "🌧️"],
+  55: ["Heavy drizzle", "🌧️", "🌧️"],
+  56: ["Freezing drizzle", "🌧️", "🌧️"],
+  57: ["Freezing drizzle", "🌧️", "🌧️"],
+  61: ["Light rain", "🌦️", "🌧️"],
+  63: ["Rain", "🌧️", "🌧️"],
+  65: ["Heavy rain", "🌧️", "🌧️"],
+  66: ["Freezing rain", "🌧️", "🌧️"],
+  67: ["Freezing rain", "🌧️", "🌧️"],
+  71: ["Light snow", "🌨️", "🌨️"],
+  73: ["Snow", "🌨️", "🌨️"],
+  75: ["Heavy snow", "❄️", "❄️"],
+  77: ["Snow grains", "🌨️", "🌨️"],
+  80: ["Rain showers", "🌦️", "🌧️"],
+  81: ["Rain showers", "🌧️", "🌧️"],
+  82: ["Violent showers", "⛈️", "⛈️"],
+  85: ["Snow showers", "🌨️", "🌨️"],
+  86: ["Snow showers", "❄️", "❄️"],
+  95: ["Thunderstorm", "⛈️", "⛈️"],
+  96: ["Thunderstorm, hail", "⛈️", "⛈️"],
+  99: ["Thunderstorm, hail", "⛈️", "⛈️"],
+};
+
+const API = "https://api.open-meteo.com/v1/forecast";
+const REFRESH_MS = 10 * 60 * 1000;
+
+let unit = loadUnit();
+let clockTimer;
+
+function loadUnit() {
+  try {
+    return localStorage.getItem("unit") === "fahrenheit" ? "fahrenheit" : "celsius";
+  } catch {
+    return "celsius";
+  }
+}
+
+function saveUnit(value) {
+  try {
+    localStorage.setItem("unit", value);
+  } catch {
+    // Storage unavailable; preference just won't persist.
+  }
+}
+
+function describe(code, isDay) {
+  const [text, day, night] = WEATHER_CODES[code] || ["Unknown", "🌡️", "🌡️"];
+  return { text, icon: isDay === 0 ? night : day };
+}
+
+function buildUrl() {
+  const params = new URLSearchParams({
+    latitude: CITIES.map((c) => c.lat).join(","),
+    longitude: CITIES.map((c) => c.lon).join(","),
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset",
+    timezone: "auto",
+    forecast_days: "5",
+    temperature_unit: unit,
+    wind_speed_unit: unit === "fahrenheit" ? "mph" : "kmh",
+    precipitation_unit: unit === "fahrenheit" ? "inch" : "mm",
+  });
+  return `${API}?${params}`;
+}
+
+function compass(deg) {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+// Open-Meteo returns local times like "2026-10-30T06:12" (no offset) when timezone=auto.
+function hhmm(localIso) {
+  return localIso.slice(11, 16);
+}
+
+function weekday(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" });
+}
+
+function localTime(timezone) {
+  try {
+    return new Date().toLocaleTimeString(undefined, { timeZone: timezone, hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "—";
+  }
+}
+
+function renderCard(city, rank, data) {
+  const node = document.getElementById("card-tpl").content.cloneNode(true);
+  const $ = (sel) => node.querySelector(sel);
+  const cur = data.current;
+  const u = data.current_units;
+  const daily = data.daily;
+  const deg = Math.round;
+  const now = describe(cur.weather_code, cur.is_day);
+
+  $(".rank").textContent = `#${rank}`;
+  $(".city").textContent = city.name;
+  $(".country").textContent = city.country;
+  $(".icon").textContent = now.icon;
+  $(".temp").textContent = `${deg(cur.temperature_2m)}°`;
+  $(".cond").textContent = now.text;
+  $(".feels").textContent = `Feels like ${deg(cur.apparent_temperature)}°`;
+  $(".hilo").textContent = `${deg(daily.temperature_2m_max[0])}° / ${deg(daily.temperature_2m_min[0])}°`;
+  $(".humidity").textContent = `${cur.relative_humidity_2m}%`;
+  $(".wind").textContent = `${deg(cur.wind_speed_10m)} ${u.wind_speed_10m} ${compass(cur.wind_direction_10m)}`;
+  $(".precip").textContent = `${cur.precipitation} ${u.precipitation}`;
+  $(".sunrise").textContent = hhmm(daily.sunrise[0]);
+  $(".sunset").textContent = hhmm(daily.sunset[0]);
+  $(".pop").textContent = `${city.population}M people`;
+  const local = $(".local");
+  local.dataset.tz = data.timezone;
+  local.textContent = localTime(data.timezone);
+
+  const list = $(".forecast");
+  daily.time.forEach((day, i) => {
+    const li = document.createElement("li");
+    const f = describe(daily.weather_code[i], 1);
+    li.title = f.text;
+    li.innerHTML = `<div class="d"></div><div class="i"></div><div class="t"><span class="hi"></span> <span class="lo"></span></div>`;
+    li.querySelector(".d").textContent = i === 0 ? "Today" : weekday(day);
+    li.querySelector(".i").textContent = f.icon;
+    li.querySelector(".hi").textContent = `${deg(daily.temperature_2m_max[i])}°`;
+    li.querySelector(".lo").textContent = `${deg(daily.temperature_2m_min[i])}°`;
+    list.appendChild(li);
+  });
+
+  return node;
+}
+
+function renderError(city, rank) {
+  const card = document.createElement("article");
+  card.className = "card failed";
+  card.innerHTML = `<span class="rank"></span><h2 class="city"></h2><p class="msg">Weather unavailable.</p>`;
+  card.querySelector(".rank").textContent = `#${rank}`;
+  card.querySelector(".city").textContent = city.name;
+  return card;
+}
+
+function tickClocks() {
+  document.querySelectorAll(".local[data-tz]").forEach((el) => {
+    el.textContent = localTime(el.dataset.tz);
+  });
+}
+
+async function load() {
+  const status = document.getElementById("status");
+  const grid = document.getElementById("cities");
+  status.className = "status";
+  status.textContent = "Loading weather…";
+
+  try {
+    const res = await fetch(buildUrl());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let results = await res.json();
+    // A single location comes back as an object; multiple as an array.
+    if (!Array.isArray(results)) results = [results];
+
+    grid.replaceChildren(
+      ...CITIES.map((city, i) =>
+        results[i]?.current ? renderCard(city, i + 1, results[i]) : renderError(city, i + 1)
+      )
+    );
+    status.textContent = "";
+    document.getElementById("updated").textContent = `Last updated ${new Date().toLocaleTimeString()}`;
+    clearInterval(clockTimer);
+    clockTimer = setInterval(tickClocks, 30 * 1000);
+  } catch (err) {
+    status.className = "status error";
+    status.textContent = `Couldn't load weather (${err.message}). Check your connection and try Refresh.`;
+  }
+}
+
+function syncUnitButtons() {
+  document.querySelectorAll(".units button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.unit === unit));
+  });
+}
+
+document.querySelectorAll(".units button").forEach((b) => {
+  b.addEventListener("click", () => {
+    if (b.dataset.unit === unit) return;
+    unit = b.dataset.unit;
+    saveUnit(unit);
+    syncUnitButtons();
+    load();
+  });
+});
+
+document.getElementById("refresh").addEventListener("click", load);
+
+syncUnitButtons();
+load();
+setInterval(load, REFRESH_MS);
+</script>
+</body>
+</html>

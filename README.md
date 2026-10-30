@@ -15,6 +15,8 @@ You can switch between °C and °F (your choice is remembered), and the data ref
 
 Weather comes from [Open-Meteo](https://open-meteo.com/), which is free and needs no API key.
 
+![Screenshot (sample data)](preview.png)
+
 ## Run it
 
 There is no build step. Serve the folder with any static server, for example:
@@ -24,6 +26,8 @@ python3 -m http.server 8000
 ```
 
 Then open http://localhost:8000. Opening `index.html` directly also works in most browsers.
+
+`megacity-weather.html` is the same app bundled into a single file, so you can open it with a double-click.
 
 ## Changing the cities
 
